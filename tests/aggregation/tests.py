@@ -1151,6 +1151,20 @@ class AggregateTestCase(TestCase):
         )
         self.assertTrue(publisher_qs.exists())
 
+    def test_aggregation_annotation_filter(self):
+        latest_book_pubdate_qs = Book.objects.filter(
+            publisher=OuterRef('pk')
+        ).values_list('id')
+        publisher_qs = Publisher.objects.values('pk').annotate(
+            has_published_books=Exists(latest_book_pubdate_qs),
+        ).filter(
+            has_published_books=True
+        ).annotate(
+            book_count=Count('book')
+        ).values_list('id')
+        print(publisher_qs.query.__str__())
+        print(list(publisher_qs))
+
     @skipUnlessDBFeature('supports_subqueries_in_group_by')
     def test_group_by_subquery_annotation(self):
         """
